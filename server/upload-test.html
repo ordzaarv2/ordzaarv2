@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="file"],
+    textarea {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ddd;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 10px;
+      overflow: auto;
+    }
+    .image-preview {
+      max-width: 100%;
+      max-height: 300px;
+      border: 1px solid #ddd;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test Upload Forms</h1>
+  
+  <h2>1. Test Direct Upload</h2>
+  <form id="directUploadForm" enctype="multipart/form-data">
+    <div class="form-group">
+      <label for="directImage">Select Image:</label>
+      <input type="file" id="directImage" name="image" accept="image/*">
+    </div>
+    <button type="submit">Upload Directly</button>
+  </form>
+  <div id="directResult" class="result" style="display: none;">
+    <h3>Upload Result:</h3>
+    <pre id="directResultContent"></pre>
+    <div id="directImagePreview" style="display: none;">
+      <h4>Uploaded Image:</h4>
+      <img id="directUploadedImage" class="image-preview">
+    </div>
+  </div>
+  
+  <hr style="margin: 30px 0;">
+  
+  <h2>2. Test Application Image Upload</h2>
+  <div class="form-group">
+    <label for="applicationId">Application ID:</label>
+    <input type="text" id="applicationId" placeholder="Enter application ID">
+  </div>
+  <form id="applicationUploadForm" enctype="multipart/form-data">
+    <div class="form-group">
+      <label for="applicationImage">Select Image:</label>
+      <input type="file" id="applicationImage" name="images" accept="image/*" multiple>
+    </div>
+    <button type="submit">Upload to Application</button>
+  </form>
+  <div id="applicationResult" class="result" style="display: none;">
+    <h3>Upload Result:</h3>
+    <pre id="applicationResultContent"></pre>
+  </div>
+  
+  <hr style="margin: 30px 0;">
+  
+  <h2>3. Debug Current Uploads</h2>
+  <button id="debugButton">Show Uploads Debug Info</button>
+  <div id="debugResult" class="result" style="display: none;">
+    <h3>Uploads Directory Info:</h3>
+    <pre id="debugResultContent"></pre>
+  </div>
+  
+  <script>
+    // 1. Direct upload form
+    document.getElementById('directUploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData();
+      const fileInput = document.getElementById('directImage');
+      
+      if (fileInput.files.length === 0) {
+        alert('Please select a file to upload');
+        return;
+      }
+      
+      formData.append('image', fileInput.files[0]);
+      
+      try {
+        const response = await fetch('/api/v1/applications/test-upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        document.getElementById('directResult').style.display = 'block';
+        document.getElementById('directResultContent').textContent = JSON.stringify(result, null, 2);
+        
+        if (result.success && result.url) {
+          document.getElementById('directImagePreview').style.display = 'block';
+          document.getElementById('directUploadedImage').src = result.url;
+        } else {
+          document.getElementById('directImagePreview').style.display = 'none';
+        }
+      } catch (error) {
+        document.getElementById('directResult').style.display = 'block';
+        document.getElementById('directResultContent').textContent = 'Error: ' + error.message;
+      }
+    });
+    
+    // 2. Application upload form
+    document.getElementById('applicationUploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const applicationId = document.getElementById('applicationId').value.trim();
+      if (!applicationId) {
+        alert('Please enter an application ID');
+        return;
+      }
+      
+      const formData = new FormData();
+      const fileInput = document.getElementById('applicationImage');
+      
+      if (fileInput.files.length === 0) {
+        alert('Please select at least one file to upload');
+        return;
+      }
+      
+      // Append all selected files
+      for (let i = 0; i < fileInput.files.length; i++) {
+        formData.append('images', fileInput.files[i]);
+      }
+      
+      try {
+        const response = await fetch(`/api/v1/applications/${applicationId}/assets`, {
+          method: 'PUT',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
+        document.getElementById('applicationResult').style.display = 'block';
+        document.getElementById('applicationResultContent').textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        document.getElementById('applicationResult').style.display = 'block';
+        document.getElementById('applicationResultContent').textContent = 'Error: ' + error.message;
+      }
+    });
+    
+    // 3. Debug button
+    document.getElementById('debugButton').addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/v1/applications/debug-uploads');
+        const result = await response.json();
+        
+        document.getElementById('debugResult').style.display = 'block';
+        document.getElementById('debugResultContent').textContent = JSON.stringify(result, null, 2);
+      } catch (error) {
+        document.getElementById('debugResult').style.display = 'block';
+        document.getElementById('debugResultContent').textContent = 'Error: ' + error.message;
+      }
+    });
+  </script>
+</body>
+</html> 
